@@ -46,8 +46,6 @@ h1 { color: #2a5885; font-size: 1.4em; margin-bottom: 12px; text-align: center; 
 .share-btn { width: 100%; padding: 16px; font-size: 1.15em; background: #25D366; color: #fff; border: none; border-radius: 6px; cursor: pointer; margin-top: 16px; font-weight: bold; }
 .share-btn:hover { background: #1da851; }
 .share-fallback { margin-top: 10px; font-size: 0.9em; color: #666; text-align: center; }
-.end-btn { width: 100%; padding: 12px; font-size: 0.95em; background: #6c757d; color: #fff; border: none; border-radius: 6px; cursor: pointer; margin-top: 8px; }
-.end-btn:hover { background: #5a6268; }
 </style>
 </head>
 <body>
@@ -176,18 +174,8 @@ function recordAnswer(userAnswer, isCorrect) {
   } else {
     feedbackArea.innerHTML = '<div class="feedback wrong">Leider nicht ganz. Richtig wäre: <strong>' + q.display + '</strong></div>';
   }
-  let buttonsHtml = '<button class="next-btn" onclick="nextQuestion()">' + (currentIndex === questions.length - 1 ? 'Fertig' : 'Nächste Frage') + '</button>';
-  if (currentIndex < questions.length - 1) {
-    buttonsHtml += '<button class="end-btn" onclick="endEarly()">Übung beenden plus Zwischenstand senden</button>';
-  }
-  document.getElementById('answer-area').innerHTML = buttonsHtml;
-}
-
-function endEarly() {
-  const remaining = questions.length - currentIndex - 1;
-  if (confirm('Übung wirklich beenden? Die restlichen ' + remaining + ' Fragen werden übersprungen. Du kannst den Zwischenstand an Papa senden.')) {
-    showSummary();
-  }
+  const nextBtnText = (currentIndex === questions.length - 1 ? 'Fertig' : 'Nächste Frage');
+  document.getElementById('answer-area').innerHTML = '<button class="next-btn" onclick="nextQuestion()">' + nextBtnText + '</button>';
 }
 
 function nextQuestion() {
