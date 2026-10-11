@@ -43,14 +43,8 @@ h1 { color: #2a5885; font-size: 1.4em; margin-bottom: 12px; text-align: center; 
 .summary td.right { background: #d4edda; }
 .summary td.wrong { background: #f8d7da; }
 .screenshot-hint { background: #fff3cd; padding: 14px; border-radius: 6px; border: 2px solid #ffc107; margin-top: 16px; text-align: center; }
-.share-btn { width: 100%; padding: 16px; font-size: 1.15em; color: #fff; border: none; border-radius: 6px; cursor: pointer; margin-top: 10px; font-weight: bold; }
-.share-whatsapp { background: #25D366; }
-.share-whatsapp:hover { background: #1da851; }
-.share-email { background: #2a5885; }
-.share-email:hover { background: #1e4066; }
-.share-copy { background: #6c757d; }
-.share-copy:hover { background: #5a6268; }
-.share-fallback { margin-top: 10px; font-size: 0.9em; color: #666; text-align: center; }
+.share-btn { width: 100%; padding: 16px; font-size: 1.15em; color: #fff; border: none; border-radius: 6px; cursor: pointer; margin-top: 16px; font-weight: bold; background: #25D366; }
+.share-btn:hover { background: #1da851; }
 </style>
 </head>
 <body>
@@ -208,10 +202,7 @@ function showSummary() {
     html += '<tr><td class="' + rowClass + '">' + (i + 1) + '</td><td>' + a.question + '</td><td>' + a.userAnswer + '</td><td>' + a.correctAnswer + '</td><td>' + timeDisplay + '</td></tr>';
   });
   html += '</tbody></table>';
-  html += '<button class="share-btn share-whatsapp" onclick="shareViaWhatsApp()">An Papa via WhatsApp</button>';
-  html += '<button class="share-btn share-email" onclick="shareViaEmail()">An Papa via Email</button>';
-  html += '<button class="share-btn share-copy" onclick="copyText()">Text kopieren plus manuell senden</button>';
-  html += '<div class="share-fallback">Falls kein Button klappt: Screenshot machen plus via WhatsApp an Papa senden</div>';
+  html += '<button class="share-btn" onclick="copyText()">Ergebnis kopieren plus an Papa senden</button>';
   html += '</div>';
   document.getElementById('app').innerHTML = html;
 }
@@ -233,33 +224,6 @@ function buildShareText() {
     shareText += (i + 1) + '. ' + a.question + ': ' + a.userAnswer + ' ' + marker + ' ' + a.timeSec + 's' + pause + '\n';
   });
   return shareText;
-}
-
-function shareViaWhatsApp() {
-  const text = buildShareText();
-  // Universal Link wa.me statt Custom-Schema whatsapp:// (robuster auf iOS, auch mit Web-Fallback)
-  const url = 'https://wa.me/?text=' + encodeURIComponent(text);
-  const w = window.open(url, '_blank', 'noopener');
-  if (!w || w.closed) {
-    // Fallback falls Pop-up blockiert
-    window.location.href = url;
-  }
-}
-
-function shareViaEmail() {
-  const text = buildShareText();
-  const subject = encodeURIComponent('Rechtschreibung-Übung Ergebnis Ferdinand');
-  const body = encodeURIComponent(text);
-  // Primär Gmail-App-Schema (umgeht iOS-Default-Mail-Client-Problem)
-  const gmailAppUrl = 'googlegmail:///co?to=h.strokosch@gmail.com&subject=' + subject + '&body=' + body;
-  // Fallback mailto nach 1.5 Sek falls Gmail-App nicht reagiert
-  const mailtoUrl = 'mailto:h.strokosch@gmail.com?subject=' + subject + '&body=' + body;
-  window.location.href = gmailAppUrl;
-  setTimeout(() => {
-    if (document.visibilityState === 'visible') {
-      window.location.href = mailtoUrl;
-    }
-  }, 1500);
 }
 
 function copyText() {
