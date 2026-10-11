@@ -43,8 +43,13 @@ h1 { color: #2a5885; font-size: 1.4em; margin-bottom: 12px; text-align: center; 
 .summary td.right { background: #d4edda; }
 .summary td.wrong { background: #f8d7da; }
 .screenshot-hint { background: #fff3cd; padding: 14px; border-radius: 6px; border: 2px solid #ffc107; margin-top: 16px; text-align: center; }
-.share-btn { width: 100%; padding: 16px; font-size: 1.15em; background: #25D366; color: #fff; border: none; border-radius: 6px; cursor: pointer; margin-top: 16px; font-weight: bold; }
-.share-btn:hover { background: #1da851; }
+.share-btn { width: 100%; padding: 16px; font-size: 1.15em; color: #fff; border: none; border-radius: 6px; cursor: pointer; margin-top: 10px; font-weight: bold; }
+.share-whatsapp { background: #25D366; }
+.share-whatsapp:hover { background: #1da851; }
+.share-email { background: #2a5885; }
+.share-email:hover { background: #1e4066; }
+.share-copy { background: #6c757d; }
+.share-copy:hover { background: #5a6268; }
 .share-fallback { margin-top: 10px; font-size: 0.9em; color: #666; text-align: center; }
 </style>
 </head>
@@ -203,41 +208,72 @@ function showSummary() {
     html += '<tr><td class="' + rowClass + '">' + (i + 1) + '</td><td>' + a.question + '</td><td>' + a.userAnswer + '</td><td>' + a.correctAnswer + '</td><td>' + timeDisplay + '</td></tr>';
   });
   html += '</tbody></table>';
-  html += '<button class="share-btn" onclick="shareResults()">Ergebnis an Papa senden</button>';
-  html += '<div class="share-fallback">Falls das nicht geht: Screenshot machen plus via WhatsApp senden</div>';
+  html += '<button class="share-btn share-whatsapp" onclick="shareViaWhatsApp()">An Papa via WhatsApp</button>';
+  html += '<button class="share-btn share-email" onclick="shareViaEmail()">An Papa via Email</button>';
+  html += '<button class="share-btn share-copy" onclick="copyText()">Text kopieren plus manuell senden</button>';
+  html += '<div class="share-fallback">Falls kein Button klappt: Screenshot machen plus via WhatsApp an Papa senden</div>';
   html += '</div>';
   document.getElementById('app').innerHTML = html;
 }
 
-function shareResults() {
+function buildShareText() {
   const answeredAnswers = answers.filter(a => a);
   const answeredCount = answeredAnswers.length;
   const correctCount = answeredAnswers.filter(a => a.isCorrect).length;
   const totalTime = answeredAnswers.reduce((sum, a) => sum + a.timeSec, 0);
   const minutes = Math.floor(totalTime / 60);
   const seconds = totalTime % 60;
-  const isPartial = answeredCount < questions.length;
   let shareText = 'Rechtschreibung-Übung Ergebnis Ferdinand\n\n';
-  shareText += 'Score: ' + correctCount + ' von ' + answeredCount + ' richtig';
-  if (isPartial) shareText += ' (Zwischenstand: ' + answeredCount + ' von ' + questions.length + ' Fragen bearbeitet)';
-  shareText += '\nGesamt-Zeit: ' + totalTime + ' Sek (' + minutes + ' Min ' + seconds + ' Sek)\n\n';
+  shareText += 'Score: ' + correctCount + ' von ' + answeredCount + ' richtig\n';
+  shareText += 'Gesamt-Zeit: ' + totalTime + ' Sek (' + minutes + ' Min ' + seconds + ' Sek)\n\n';
   shareText += 'Details pro Frage:\n';
   answeredAnswers.forEach((a, i) => {
-    const marker = a.isCorrect ? '✓' : '✗';
+    const marker = a.isCorrect ? '+' : 'x';
     const pause = a.wasAway ? ' (Pause)' : '';
     shareText += (i + 1) + '. ' + a.question + ': ' + a.userAnswer + ' ' + marker + ' ' + a.timeSec + 's' + pause + '\n';
   });
-  if (navigator.share) {
-    navigator.share({ title: 'Rechtschreibung-Übung Ergebnis Ferdinand', text: shareText }).catch(err => fallbackShare(shareText));
-  } else {
-    fallbackShare(shareText);
-  }
+  return shareText;
 }
 
-function fallbackShare(text) {
+function shareViaWhatsApp() {
+  const text = buildShareText();
+  window.location.href = 'whatsapp://send?text=' + encodeURIComponent(text);
+}
+
+function shareViaEmail() {
+  const text = buildShareText();
   const subject = encodeURIComponent('Rechtschreibung-Übung Ergebnis Ferdinand');
   const body = encodeURIComponent(text);
   window.location.href = 'mailto:h.strokosch@gmail.com?subject=' + subject + '&body=' + body;
+}
+
+function copyText() {
+  const text = buildShareText();
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      alert('Text kopiert. Jetzt WhatsApp oder Email öffnen plus einfügen plus an Papa senden.');
+    }).catch(err => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';
+  textarea.style.top = '0';
+  textarea.style.left = '0';
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  try {
+    document.execCommand('copy');
+    alert('Text kopiert. Jetzt WhatsApp oder Email öffnen plus einfügen plus an Papa senden.');
+  } catch (err) {
+    alert('Kopieren hat nicht geklappt. Bitte Screenshot vom Ergebnis machen plus via WhatsApp an Papa senden.');
+  }
+  document.body.removeChild(textarea);
 }
 
 renderQuestion();
