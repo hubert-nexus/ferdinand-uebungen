@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Baseline-Diagnose Natürliche Zahlen — Ferdinand</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f4f8; padding: 16px; max-width: 600px; margin: 0 auto; min-height: 100vh; }
+h1 { color: #2a5885; font-size: 1.4em; margin-bottom: 12px; text-align: center; }
+h2 { color: #2a5885; font-size: 1.15em; margin-bottom: 10px; }
+h3 { color: #444; font-size: 1.05em; margin-top: 16px; margin-bottom: 8px; }
+.intro { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.intro p { margin-bottom: 10px; color: #333; line-height: 1.5; }
+.intro ul { margin-left: 20px; margin-bottom: 10px; color: #333; }
+.intro li { margin-bottom: 6px; }
+.start-btn { width: 100%; padding: 16px; font-size: 1.15em; background: #2a5885; color: #fff; border: none; border-radius: 6px; cursor: pointer; margin-top: 12px; font-weight: bold; }
+.start-btn:hover { background: #1e4066; }
+.header { background: #fff; padding: 12px; border-radius: 8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.progress { font-weight: bold; color: #2a5885; }
+.timer { color: #666; font-size: 0.9em; }
+.block-label { background: #e8f0f8; padding: 8px 14px; border-radius: 6px; margin-bottom: 12px; font-weight: bold; color: #2a5885; font-size: 0.95em; }
+.question-box { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.question-text { font-size: 1.15em; margin-bottom: 12px; color: #333; }
+.question-hint { color: #555; font-size: 1.05em; margin-bottom: 16px; background: #f8f8f8; padding: 10px; border-radius: 4px; border-left: 3px solid #2a5885; }
+.input-hint { color: #d35400; font-size: 0.9em; margin-bottom: 10px; font-weight: bold; }
+.input-field { width: 100%; padding: 14px; font-size: 1.1em; border: 2px solid #ccc; border-radius: 6px; margin-bottom: 12px; }
+.input-field:focus { outline: none; border-color: #2a5885; }
+.multi-field-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.multi-field-col { flex: 1; min-width: 60px; }
+.multi-field-col label { display: block; font-weight: bold; color: #2a5885; text-align: center; margin-bottom: 4px; font-size: 0.9em; }
+.multi-field-col input { width: 100%; padding: 10px; font-size: 1.05em; border: 2px solid #ccc; border-radius: 4px; text-align: center; }
+.mc-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.mc-button { padding: 14px; font-size: 1.1em; background: #fff; border: 2px solid #ccc; border-radius: 6px; cursor: pointer; text-align: center; font-weight: bold; }
+.mc-button:hover { background: #f0f0f0; border-color: #2a5885; }
+.mc-button:active { background: #d8e4f0; }
+.mc-symbol { font-size: 1.5em; }
+.submit-btn { width: 100%; padding: 14px; font-size: 1.1em; background: #2a5885; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+.submit-btn:hover { background: #1e4066; }
+.skip-btn { width: 100%; padding: 10px; font-size: 0.9em; background: #fff; color: #999; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; margin-top: 8px; }
+.pause-dialog { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
+.pause-content { background: #fff; padding: 24px; border-radius: 8px; max-width: 400px; text-align: center; }
+.pause-content h2 { color: #2a5885; margin-bottom: 12px; }
+.pause-content p { margin-bottom: 16px; color: #333; }
+.pause-content button { padding: 12px 24px; margin: 6px; font-size: 1em; border: none; border-radius: 6px; cursor: pointer; }
+.pause-yes { background: #28a745; color: #fff; }
+.pause-no { background: #ffc107; color: #333; }
+.summary { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.summary h1 { margin-bottom: 16px; }
+.summary .score { font-size: 1.8em; text-align: center; color: #2a5885; margin: 20px 0; font-weight: bold; }
+.summary .total-time { text-align: center; margin-bottom: 20px; color: #555; }
+.summary .block-section { margin: 20px 0; padding: 16px; background: #f8f8f8; border-radius: 6px; border-left: 4px solid #2a5885; }
+.summary .block-pattern { font-size: 1.05em; font-weight: bold; margin: 8px 0; }
+.pattern-beherrschung { color: #155724; }
+.pattern-festigung { color: #856404; }
+.pattern-fluechtigkeit { color: #0c5460; }
+.pattern-luecke { color: #721c24; }
+.summary table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 0.85em; }
+.summary th { background: #2a5885; color: #fff; padding: 6px; text-align: left; }
+.summary td { padding: 6px; border-bottom: 1px solid #ddd; vertical-align: top; }
+.summary td.right { background: #d4edda; }
+.summary td.wrong { background: #f8d7da; }
+.summary td.skipped { background: #e2e3e5; color: #666; }
+.screenshot-hint { background: #fff3cd; padding: 14px; border-radius: 6px; border: 2px solid #ffc107; margin-top: 16px; text-align: center; color: #333; }
+.share-btn { width: 100%; padding: 16px; font-size: 1.15em; color: #fff; border: none; border-radius: 6px; cursor: pointer; margin-top: 16px; font-weight: bold; background: #25D366; }
+.share-btn:hover { background: #1da851; }
+</style>
+</head>
+<body>
+
+<div id="app">
+<div class="intro">
+<h1>Baseline-Diagnose: Natürliche Zahlen</h1>
+<h2>Hey Ferdi,</h2>
+<p>Das hier ist kein normales Übungsblatt, sondern ein <strong>Test</strong>. Wir wollen rausfinden, wo du schon richtig gut bist und wo wir noch zusammen üben sollten.</p>
+<p><strong>So geht es:</strong></p>
+<ul>
+<li>12 Aufgaben in 5 Blöcken (Stellenwerttafel, Zahlen lesen und schreiben, Zahlenstrahl, Vergleichen, Nachbarzahlen)</li>
+<li>Rechne jede Aufgabe auf <strong>Papier</strong> aus, trage dann das Ergebnis hier im Handy ein</li>
+<li>Du siehst erst am Ende, was richtig oder falsch war — damit die Diagnose nicht verfälscht wird</li>
+<li>Wenn du eine Aufgabe nicht weißt, drück auf „Weiß ich nicht" statt zu raten — das hilft uns besser</li>
+<li>Dauer: etwa 20 Minuten, keine Hektik</li>
+</ul>
+<p><strong>Was du brauchst:</strong> Papier, Stift, dieses Handy</p>
+<button class="start-btn" onclick="startDiagnose()">Los geht's</button>
+</div>
+</div>
+
+<div id="pause-dialog" class="pause-dialog" style="display:none;">
+<div class="pause-content">
+<h2>Hey Ferdi, alles ok?</h2>
+<p>Du brauchst schon ein bisschen für die Antwort. Warst du kurz weg (Klo, Tür) oder brauchst du nochmal einen Moment zum Nachdenken?</p>
+<button class="pause-yes" onclick="pauseResume(true)">War kurz weg, weiter</button>
+<button class="pause-no" onclick="pauseResume(false)">Brauch nochmal Moment</button>
+</div>
+</div>
+
+<script>
+const questions = [
+  // Block 1: Stellenwerttafel (3 Aufgaben)
+  { block: 'Stellenwerttafel', type: 'multifield',
+    text: 'Trage die Zahl 45 823 in die Stellenwerttafel ein.',
+    hint: 'Jede Ziffer kommt in die passende Spalte.',
+    inputHint: '🔲 Mehrere Felder ausfüllen — pro Spalte eine Ziffer',
+    fields: ['ZT', 'T', 'H', 'Z', 'E'],
+    correct: ['4', '5', '8', '2', '3'],
+    display: 'ZT=4, T=5, H=8, Z=2, E=3' },
+  { block: 'Stellenwerttafel', type: 'number',
+    text: 'Welchen Wert hat die Ziffer 7 in der Zahl 374 851?',
+    hint: 'Zahl: 374 851 — die 7 steht in welcher Spalte? Was ist ihr Wert?',
+    inputHint: '🔢 Zahl eingeben (ohne Leerzeichen oder Punkte)',
+    correct: ['70000'],
+    display: '70 000 (siebzigtausend)' },
+  { block: 'Stellenwerttafel', type: 'number',
+    text: 'Baue aus diesen Werten die Zahl: T = 3, H = 0, Z = 4, E = 9',
+    hint: '3 Tausender, 0 Hunderter, 4 Zehner, 9 Einer. Welche Zahl ist das?',
+    inputHint: '🔢 Zahl eingeben (ohne Leerzeichen oder Punkte)',
+    correct: ['3049'],
+    display: '3 049' },
+
+  // Block 2: Zahlen lesen/schreiben (3 Aufgaben)
+  { block: 'Zahlen lesen und schreiben', type: 'number',
+    text: 'Schreibe die Zahl als Ziffern: siebenundneunzigtausenddreihundertachtundfünfzig',
+    hint: 'Siebenundneunzigtausend = 97 000. Plus dreihundertachtundfünfzig.',
+    inputHint: '🔢 Zahl eingeben (ohne Leerzeichen oder Punkte)',
+    correct: ['97358'],
+    display: '97 358' },
+  { block: 'Zahlen lesen und schreiben', type: 'text',
+    text: 'Schreibe diese Zahl als Wort: 2 405',
+    hint: 'Zweitausend plus ...',
+    inputHint: '📝 Als Wort schreiben (ein zusammenhängendes Wort, alles klein)',
+    correct: ['zweitausendvierhundertfünf', 'zweitausendvierhundertfuenf'],
+    display: 'zweitausendvierhundertfünf' },
+  { block: 'Zahlen lesen und schreiben', type: 'multifield',
+    text: 'Lies die Zahl 8 004 500 — welche Werte stehen in diesen Spalten?',
+    hint: 'Zahl: 8 004 500. Welcher Wert steht bei M (Million) und bei T (Tausender)?',
+    inputHint: '🔲 Zwei Felder — Ziffer pro Spalte',
+    fields: ['M', 'T'],
+    correct: ['8', '4'],
+    display: 'M=8, T=4' },
+
+  // Block 3: Zahlenstrahl (2 Aufgaben)
+  { block: 'Zahlenstrahl', type: 'number',
+    text: 'Auf einem Zahlenstrahl von 70 000 bis 80 000 (Schritte von 500) zeigt ein Pfeil zwischen 73 000 und 74 000, genau in der Mitte. Welche Zahl ist das?',
+    hint: 'Mitte zwischen 73 000 und 74 000.',
+    inputHint: '🔢 Zahl eingeben (ohne Leerzeichen oder Punkte)',
+    correct: ['73500'],
+    display: '73 500' },
+  { block: 'Zahlenstrahl', type: 'number',
+    text: 'Auf einem Zahlenstrahl von 0 bis 1 000 000 (Schritte von 100 000) zeigt ein Pfeil auf die dritte Markierung von 0 aus. Welche Zahl ist das?',
+    hint: '0 — 100 000 — 200 000 — nächste Markierung ist ...',
+    inputHint: '🔢 Zahl eingeben (ohne Leerzeichen oder Punkte)',
+    correct: ['300000'],
+    display: '300 000' },
+
+  // Block 4: Vergleichen (2 Aufgaben)
+  { block: 'Vergleichen', type: 'mc',
+    text: 'Welches Zeichen passt zwischen die beiden Zahlen? 48 925 ___ 48 952',
+    hint: 'Beide Zahlen fast gleich. Vergleiche von links nach rechts: Zehntausender gleich, Tausender gleich, Hunderter 9 = 9, Zehner 2 und 5 — da ist der Unterschied.',
+    inputHint: '⬜ Symbol wählen',
+    options: ['< (kleiner als)', '> (größer als)', '= (gleich)'],
+    correct: 0,
+    display: '< (48 925 ist kleiner als 48 952)' },
+  { block: 'Vergleichen', type: 'multifield',
+    text: 'Ordne diese drei Zahlen von klein nach groß. Trage die Rang-Nummern 1, 2 und 3 ein. 1 = kleinste Zahl, 3 = größte Zahl.',
+    hint: 'Zahl A = 342 100 · Zahl B = 324 100 · Zahl C = 342 010',
+    inputHint: '🔲 Pro Zahl eine Rang-Nummer (1 kleinste, 3 größte)',
+    fields: ['A: 342 100', 'B: 324 100', 'C: 342 010'],
+    correct: ['3', '1', '2'],
+    display: 'B (324 100) < C (342 010) < A (342 100), also A=3, B=1, C=2' },
+
+  // Block 5: Nachbarzahlen (2 Aufgaben)
+  { block: 'Nachbarzahlen', type: 'number',
+    text: 'Was ist der Vorgänger von 100 000?',
+    hint: 'Vorgänger = die Zahl davor, also eins weniger.',
+    inputHint: '🔢 Zahl eingeben (ohne Leerzeichen oder Punkte)',
+    correct: ['99999'],
+    display: '99 999' },
+  { block: 'Nachbarzahlen', type: 'number',
+    text: 'Was ist der Nachfolger von 999 999?',
+    hint: 'Nachfolger = die Zahl danach, also eins mehr.',
+    inputHint: '🔢 Zahl eingeben (ohne Leerzeichen oder Punkte)',
+    correct: ['1000000'],
+    display: '1 000 000 (eine Million)' }
+];
+
+let currentIndex = 0;
+let questionStartTime = 0;
+let timerInterval = null;
+let pauseStartTime = 0;
+let answers = [];
+let diagnoseStarted = false;
+
+function normalizeNumber(str) {
+  return str.toString().toLowerCase().trim().replace(/\s+/g, '').replace(/\./g, '').replace(/,/g, '');
+}
+
+function normalizeText(str) {
+  return str.toString().toLowerCase().trim().replace(/\s+/g, '').replace(/ß/g, 'ss');
+}
+
+function startDiagnose() {
+  diagnoseStarted = true;
+  document.getElementById('app').innerHTML = `
+    <h1>Baseline-Diagnose Natürliche Zahlen</h1>
+    <div class="header">
+      <div class="progress" id="progress">Frage 1 von ${questions.length}</div>
+      <div class="timer" id="timer">0 Sek</div>
+    </div>
+    <div class="block-label" id="block-label"></div>
+    <div class="question-box">
+      <div class="input-hint" id="input-hint"></div>
+      <div class="question-text" id="question-text"></div>
+      <div class="question-hint" id="question-hint"></div>
+      <div id="answer-area"></div>
+    </div>
+  `;
+  renderQuestion();
+}
+
+function startTimer() {
+  questionStartTime = Date.now();
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    const sec = Math.floor((Date.now() - questionStartTime) / 1000);
+    document.getElementById('timer').textContent = sec + ' Sek';
+    if (sec === 60) showPauseDialog();
+  }, 500);
+}
+
+function stopTimer() {
+  if (timerInterval) clearInterval(timerInterval);
+  return Math.floor((Date.now() - questionStartTime) / 1000);
+}
+
+function showPauseDialog() {
+  pauseStartTime = Date.now();
+  document.getElementById('pause-dialog').style.display = 'flex';
+}
+
+function pauseResume(wasAway) {
+  if (wasAway) {
+    questionStartTime += (Date.now() - pauseStartTime);
+  }
+  document.getElementById('pause-dialog').style.display = 'none';
+  if (!answers[currentIndex]) answers[currentIndex] = {};
+  answers[currentIndex].wasAway = wasAway;
+}
+
+function renderQuestion() {
+  const q = questions[currentIndex];
+  document.getElementById('progress').textContent = 'Frage ' + (currentIndex + 1) + ' von ' + questions.length;
+  document.getElementById('block-label').textContent = 'Block ' + (q.block);
+  document.getElementById('input-hint').textContent = q.inputHint;
+  document.getElementById('question-text').textContent = q.text;
+  document.getElementById('question-hint').innerHTML = q.hint;
+  const answerArea = document.getElementById('answer-area');
+
+  if (q.type === 'number') {
+    answerArea.innerHTML = '<input type="text" class="input-field" id="answer-input" inputmode="numeric" autocomplete="off" autocapitalize="off" autocorrect="off" placeholder="Ergebnis eintragen"><button class="submit-btn" onclick="submitNumber()">Antwort absenden</button><button class="skip-btn" onclick="skipQuestion()">Weiß ich nicht — überspringen</button>';
+    setTimeout(() => document.getElementById('answer-input').focus(), 100);
+  } else if (q.type === 'text') {
+    answerArea.innerHTML = '<input type="text" class="input-field" id="answer-input" autocomplete="off" autocapitalize="off" autocorrect="off" placeholder="Wort eintragen"><button class="submit-btn" onclick="submitText()">Antwort absenden</button><button class="skip-btn" onclick="skipQuestion()">Weiß ich nicht — überspringen</button>';
+    setTimeout(() => document.getElementById('answer-input').focus(), 100);
+  } else if (q.type === 'multifield') {
+    let html = '<div class="multi-field-row">';
+    q.fields.forEach((label, i) => {
+      html += '<div class="multi-field-col"><label>' + label + '</label><input type="text" inputmode="numeric" id="mf-' + i + '" autocomplete="off" autocapitalize="off" autocorrect="off"></div>';
+    });
+    html += '</div><button class="submit-btn" onclick="submitMultifield()">Antwort absenden</button><button class="skip-btn" onclick="skipQuestion()">Weiß ich nicht — überspringen</button>';
+    answerArea.innerHTML = html;
+    setTimeout(() => document.getElementById('mf-0').focus(), 100);
+  } else if (q.type === 'mc') {
+    let html = '<div class="mc-options">';
+    q.options.forEach((opt, i) => {
+      html += '<button class="mc-button" onclick="submitMC(' + i + ')">' + opt + '</button>';
+    });
+    html += '</div><button class="skip-btn" onclick="skipQuestion()">Weiß ich nicht — überspringen</button>';
+    answerArea.innerHTML = html;
+  }
+  startTimer();
+}
+
+function submitNumber() {
+  const input = document.getElementById('answer-input').value;
+  const q = questions[currentIndex];
+  const normalized = normalizeNumber(input);
+  const isCorrect = q.correct.some(c => normalizeNumber(c) === normalized);
+  recordAnswer(input, isCorrect, false);
+}
+
+function submitText() {
+  const input = document.getElementById('answer-input').value;
+  const q = questions[currentIndex];
+  const normalized = normalizeText(input);
+  const isCorrect = q.correct.some(c => normalizeText(c) === normalized);
+  recordAnswer(input, isCorrect, false);
+}
+
+function submitMultifield() {
+  const q = questions[currentIndex];
+  const inputs = q.fields.map((_, i) => document.getElementById('mf-' + i).value);
+  const normalized = inputs.map(v => normalizeNumber(v));
+  const isCorrect = normalized.every((v, i) => v === normalizeNumber(q.correct[i]));
+  recordAnswer(inputs.join(' | '), isCorrect, false);
+}
+
+function submitMC(index) {
+  const q = questions[currentIndex];
+  const isCorrect = index === q.correct;
+  recordAnswer(q.options[index], isCorrect, false);
+}
+
+function skipQuestion() {
+  const q = questions[currentIndex];
+  recordAnswer('(Weiß ich nicht)', false, true);
+}
+
+function recordAnswer(userAnswer, isCorrect, skipped) {
+  const timeSec = stopTimer();
+  const q = questions[currentIndex];
+  answers[currentIndex] = {
+    block: q.block,
+    question: q.text,
+    hint: q.hint,
+    userAnswer: userAnswer,
+    correctAnswer: q.display,
+    isCorrect: isCorrect,
+    skipped: skipped,
+    timeSec: timeSec,
+    wasAway: answers[currentIndex] ? answers[currentIndex].wasAway : false
+  };
+  nextQuestion();
+}
+
+function nextQuestion() {
+  currentIndex++;
+  if (currentIndex >= questions.length) {
+    showSummary();
+  } else {
+    renderQuestion();
+  }
+}
+
+function classifyPattern(block) {
+  const blockAnswers = answers.filter(a => a && a.block === block);
+  const nonSkipped = blockAnswers.filter(a => !a.skipped);
+  if (nonSkipped.length === 0) {
+    const skippedCount = blockAnswers.filter(a => a.skipped).length;
+    return { label: 'Nicht bearbeitet (alle übersprungen)', cls: 'pattern-luecke', correct: 0, total: blockAnswers.length, avgTime: 0, skipped: skippedCount };
+  }
+  const correctCount = nonSkipped.filter(a => a.isCorrect).length;
+  const correctRatio = correctCount / nonSkipped.length;
+  const avgTime = nonSkipped.reduce((sum, a) => sum + a.timeSec, 0) / nonSkipped.length;
+  const skippedCount = blockAnswers.filter(a => a.skipped).length;
+  const isSlowThreshold = 30;
+  let label, cls;
+  if (correctRatio >= 0.75 && avgTime <= isSlowThreshold) {
+    label = 'Beherrschung sicher (richtig plus schnell)'; cls = 'pattern-beherrschung';
+  } else if (correctRatio >= 0.75 && avgTime > isSlowThreshold) {
+    label = 'Festigungs-Bedarf (richtig aber langsam)'; cls = 'pattern-festigung';
+  } else if (correctRatio < 0.75 && avgTime <= isSlowThreshold) {
+    label = 'Flüchtigkeits-Fehler (falsch aber schnell)'; cls = 'pattern-fluechtigkeit';
+  } else {
+    label = 'Konzept-Lücke (falsch und langsam)'; cls = 'pattern-luecke';
+  }
+  return { label, cls, correct: correctCount, total: blockAnswers.length, avgTime: Math.round(avgTime), skipped: skippedCount };
+}
+
+function showSummary() {
+  const nonSkipped = answers.filter(a => a && !a.skipped);
+  const totalAnswered = answers.filter(a => a).length;
+  const correctCount = nonSkipped.filter(a => a.isCorrect).length;
+  const skippedCount = answers.filter(a => a && a.skipped).length;
+  const totalTime = answers.filter(a => a).reduce((sum, a) => sum + a.timeSec, 0);
+  const minutes = Math.floor(totalTime / 60);
+  const seconds = totalTime % 60;
+
+  const blocks = ['Stellenwerttafel', 'Zahlen lesen und schreiben', 'Zahlenstrahl', 'Vergleichen', 'Nachbarzahlen'];
+
+  let html = '<div class="summary">';
+  html += '<h1>Fertig, Ferdi!</h1>';
+  html += '<div class="score">' + correctCount + ' von ' + nonSkipped.length + ' richtig' + (skippedCount > 0 ? ' · ' + skippedCount + ' übersprungen' : '') + '</div>';
+  html += '<div class="total-time">Gesamt-Zeit: ' + totalTime + ' Sekunden (' + minutes + ' Min ' + seconds + ' Sek)</div>';
+
+  html += '<h2>Pattern-Analyse pro Block</h2>';
+  blocks.forEach(block => {
+    const p = classifyPattern(block);
+    html += '<div class="block-section">';
+    html += '<h3>Block: ' + block + '</h3>';
+    html += '<p>' + p.correct + ' von ' + p.total + ' richtig · Durchschnitts-Zeit ' + p.avgTime + ' Sek';
+    if (p.skipped > 0) html += ' · ' + p.skipped + ' übersprungen';
+    html += '</p>';
+    html += '<div class="block-pattern ' + p.cls + '">' + p.label + '</div>';
+    html += '</div>';
+  });
+
+  html += '<h2>Deine Antworten im Detail</h2>';
+  html += '<table><thead><tr><th>Nr</th><th>Block</th><th>Deine Antwort</th><th>Richtig</th><th>Zeit</th></tr></thead><tbody>';
+  answers.forEach((a, i) => {
+    if (!a) return;
+    const rowClass = a.skipped ? 'skipped' : (a.isCorrect ? 'right' : 'wrong');
+    const timeDisplay = a.timeSec + 's' + (a.wasAway ? ' (Pause)' : '');
+    html += '<tr><td class="' + rowClass + '">' + (i + 1) + '</td><td>' + a.block + '</td><td>' + a.userAnswer + '</td><td>' + a.correctAnswer + '</td><td>' + timeDisplay + '</td></tr>';
+  });
+  html += '</tbody></table>';
+
+  html += '<div class="screenshot-hint">';
+  html += '<strong>Jetzt:</strong><br>';
+  html += 'Mach einen Screenshot von dieser ganzen Zusammenfassung oder benutze den Knopf unten um den Text zu kopieren. Schick das Ergebnis via WhatsApp an Papa.';
+  html += '</div>';
+  html += '<button class="share-btn" onclick="copyText()">Ergebnis kopieren plus an Papa senden</button>';
+  html += '</div>';
+  document.getElementById('app').innerHTML = html;
+}
+
+function buildShareText() {
+  const nonSkipped = answers.filter(a => a && !a.skipped);
+  const totalAnswered = answers.filter(a => a).length;
+  const correctCount = nonSkipped.filter(a => a.isCorrect).length;
+  const skippedCount = answers.filter(a => a && a.skipped).length;
+  const totalTime = answers.filter(a => a).reduce((sum, a) => sum + a.timeSec, 0);
+  const minutes = Math.floor(totalTime / 60);
+  const seconds = totalTime % 60;
+
+  let text = 'Baseline-Diagnose Natürliche Zahlen — Ferdinand\n\n';
+  text += 'Score: ' + correctCount + ' von ' + nonSkipped.length + ' richtig';
+  if (skippedCount > 0) text += ' · ' + skippedCount + ' übersprungen';
+  text += '\nGesamt-Zeit: ' + totalTime + ' Sek (' + minutes + ' Min ' + seconds + ' Sek)\n\n';
+
+  text += 'Pattern-Analyse pro Block:\n';
+  const blocks = ['Stellenwerttafel', 'Zahlen lesen und schreiben', 'Zahlenstrahl', 'Vergleichen', 'Nachbarzahlen'];
+  blocks.forEach(block => {
+    const p = classifyPattern(block);
+    text += '- ' + block + ': ' + p.correct + '/' + p.total + ' richtig, Zeit-ø ' + p.avgTime + 's';
+    if (p.skipped > 0) text += ' (' + p.skipped + ' übersprungen)';
+    text += ' → ' + p.label + '\n';
+  });
+
+  text += '\nDetails pro Frage:\n';
+  answers.forEach((a, i) => {
+    if (!a) return;
+    const marker = a.skipped ? '-' : (a.isCorrect ? '+' : 'x');
+    const pause = a.wasAway ? ' (Pause)' : '';
+    text += (i + 1) + '. ' + a.block + ': "' + a.userAnswer + '" ' + marker + ' richtig wäre: ' + a.correctAnswer + ' · ' + a.timeSec + 's' + pause + '\n';
+  });
+  return text;
+}
+
+function copyText() {
+  const text = buildShareText();
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      alert('Text kopiert. Jetzt WhatsApp öffnen plus einfügen plus an Papa senden.');
+    }).catch(err => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';
+  textarea.style.top = '0';
+  textarea.style.left = '0';
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  try {
+    document.execCommand('copy');
+    alert('Text kopiert. Jetzt WhatsApp öffnen plus einfügen plus an Papa senden.');
+  } catch (err) {
+    alert('Kopieren hat nicht geklappt. Bitte Screenshot vom Ergebnis machen plus via WhatsApp an Papa senden.');
+  }
+  document.body.removeChild(textarea);
+}
+</script>
+
+</body>
+</html>
