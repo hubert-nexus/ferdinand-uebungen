@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Baseline-Diagnose Zusammenleben — Ferdinand</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f4f8; padding: 16px; max-width: 600px; margin: 0 auto; min-height: 100vh; }
+h1 { color: #2a5885; font-size: 1.4em; margin-bottom: 12px; text-align: center; }
+h2 { color: #2a5885; font-size: 1.15em; margin-bottom: 10px; }
+h3 { color: #444; font-size: 1.05em; margin-top: 16px; margin-bottom: 8px; }
+.intro { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.intro p { margin-bottom: 10px; color: #333; line-height: 1.5; }
+.intro ul { margin-left: 20px; margin-bottom: 10px; color: #333; }
+.intro li { margin-bottom: 6px; }
+.start-btn { width: 100%; padding: 16px; font-size: 1.15em; background: #2a5885; color: #fff; border: none; border-radius: 6px; cursor: pointer; margin-top: 12px; font-weight: bold; }
+.start-btn:hover { background: #1e4066; }
+.header { background: #fff; padding: 12px; border-radius: 8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.progress { font-weight: bold; color: #2a5885; }
+.timer { color: #666; font-size: 0.9em; }
+.block-label { background: #e8f0f8; padding: 8px 14px; border-radius: 6px; margin-bottom: 12px; font-weight: bold; color: #2a5885; font-size: 0.95em; }
+.question-box { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.question-text { font-size: 1.15em; margin-bottom: 12px; color: #333; line-height: 1.4; }
+.question-hint { color: #555; font-size: 1.0em; margin-bottom: 16px; background: #f8f8f8; padding: 10px; border-radius: 4px; border-left: 3px solid #2a5885; line-height: 1.4; }
+.input-hint { color: #d35400; font-size: 0.9em; margin-bottom: 10px; font-weight: bold; }
+.input-field { width: 100%; padding: 14px; font-size: 1.1em; border: 2px solid #ccc; border-radius: 6px; margin-bottom: 12px; }
+.input-field:focus { outline: none; border-color: #2a5885; }
+.mc-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.mc-button { padding: 14px; font-size: 1.05em; background: #fff; border: 2px solid #ccc; border-radius: 6px; cursor: pointer; text-align: left; font-weight: 500; line-height: 1.3; }
+.mc-button:hover { background: #f0f0f0; border-color: #2a5885; }
+.mc-button:active { background: #d8e4f0; }
+.submit-btn { width: 100%; padding: 14px; font-size: 1.1em; background: #2a5885; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+.submit-btn:hover { background: #1e4066; }
+.skip-btn { width: 100%; padding: 10px; font-size: 0.9em; background: #fff; color: #999; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; margin-top: 8px; }
+.pause-dialog { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
+.pause-content { background: #fff; padding: 24px; border-radius: 8px; max-width: 400px; text-align: center; }
+.pause-content h2 { color: #2a5885; margin-bottom: 12px; }
+.pause-content p { margin-bottom: 16px; color: #333; }
+.pause-content button { padding: 12px 24px; margin: 6px; font-size: 1em; border: none; border-radius: 6px; cursor: pointer; }
+.pause-yes { background: #28a745; color: #fff; }
+.pause-no { background: #ffc107; color: #333; }
+.summary { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.summary h1 { margin-bottom: 16px; }
+.summary .score { font-size: 1.8em; text-align: center; color: #2a5885; margin: 20px 0; font-weight: bold; }
+.summary .total-time { text-align: center; margin-bottom: 20px; color: #555; }
+.summary .block-section { margin: 20px 0; padding: 16px; background: #f8f8f8; border-radius: 6px; border-left: 4px solid #2a5885; }
+.summary .block-pattern { font-size: 1.05em; font-weight: bold; margin: 8px 0; }
+.pattern-beherrschung { color: #155724; }
+.pattern-festigung { color: #856404; }
+.pattern-fluechtigkeit { color: #0c5460; }
+.pattern-luecke { color: #721c24; }
+.summary table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 0.85em; }
+.summary th { background: #2a5885; color: #fff; padding: 6px; text-align: left; }
+.summary td { padding: 6px; border-bottom: 1px solid #ddd; vertical-align: top; }
+.summary td.right { background: #d4edda; }
+.summary td.wrong { background: #f8d7da; }
+.summary td.skipped { background: #e2e3e5; color: #666; }
+.screenshot-hint { background: #fff3cd; padding: 14px; border-radius: 6px; border: 2px solid #ffc107; margin-top: 16px; text-align: center; color: #333; }
+.share-btn { width: 100%; padding: 16px; font-size: 1.15em; color: #fff; border: none; border-radius: 6px; cursor: pointer; margin-top: 16px; font-weight: bold; background: #25D366; }
+.share-btn:hover { background: #1da851; }
+</style>
+</head>
+<body>
+
+<div id="app">
+<div class="intro">
+<h1>Baseline-Diagnose: Zusammenleben</h1>
+<h2>Hey Ferdi,</h2>
+<p>Das hier ist kein normales Übungsblatt, sondern ein <strong>Test für uns beide</strong>. Wir wollen rausfinden, wo du beim Thema „Zusammenleben" schon fit bist und wo wir heute abend und morgen zusammen üben sollten.</p>
+<p><strong>So geht es:</strong></p>
+<ul>
+<li>12 Aufgaben in 6 Blöcken (Lebens-Umbrüche, Gewalt-Arten, Mobbing, Prävention plus Intervention, Behinderung, Inklusion)</li>
+<li>Lies jede Aufgabe in Ruhe, überlege kurz, dann tippe oder wähle</li>
+<li>Du siehst erst am Ende, was richtig oder falsch war — damit die Diagnose ehrlich bleibt</li>
+<li>Wenn du etwas nicht weißt, drück auf „Weiß ich nicht" statt zu raten — das hilft uns besser</li>
+<li>Dauer: etwa 12 bis 15 Minuten, keine Hektik</li>
+</ul>
+<p><strong>Was du brauchst:</strong> Nur das Handy.</p>
+<button class="start-btn" onclick="startDiagnose()">Los geht's</button>
+</div>
+</div>
+
+<div id="pause-dialog" class="pause-dialog" style="display:none;">
+<div class="pause-content">
+<h2>Hey Ferdi, alles ok?</h2>
+<p>Du brauchst schon ein bisschen für die Antwort. Warst du kurz weg (Klo, Tür) oder brauchst du nochmal einen Moment zum Nachdenken?</p>
+<button class="pause-yes" onclick="pauseResume(true)">War kurz weg, weiter</button>
+<button class="pause-no" onclick="pauseResume(false)">Brauch nochmal Moment</button>
+</div>
+</div>
+
+<script>
+const questions = [
+  // Block 1: Lebens-Umbrüche (2 Aufgaben)
+  { block: 'Lebens-Umbrüche', type: 'mc',
+    text: 'Welche Situation verändert das Zusammenleben in der Familie meistens dauerhaft?',
+    hint: 'Lebens-Umbrüche sind große Veränderungen, die lange nachwirken.',
+    inputHint: 'Antwort tippen',
+    options: [
+      'Ein Ausflug am Wochenende',
+      'Trennung der Eltern durch Scheidung',
+      'Ein neues Fahrrad kaufen',
+      'Hausaufgaben machen'
+    ],
+    correct: 1,
+    display: 'Trennung der Eltern durch Scheidung — ändert das Zusammenleben dauerhaft (zwei Zuhause, Umgewöhnung).' },
+
+  { block: 'Lebens-Umbrüche', type: 'textkw',
+    text: 'Nenne ein Beispiel für einen Lebens-Umbruch, der das Zusammenleben verändert.',
+    hint: 'Denk an große Veränderungen in Familie oder Umfeld. Ein Wort reicht.',
+    inputHint: 'Wort oder kurzer Satz',
+    mode: 'any',
+    keywords: ['umzug', 'scheidung', 'trennung', 'tod', 'krankheit', 'unfall', 'verletzung', 'behinderung', 'neue schule', 'verlust', 'freund', 'geburt', 'baby', 'arbeitslos', 'adoption', 'sterb', 'verlor'],
+    display: 'Mögliche Beispiele: Umzug, Scheidung, Tod eines Angehörigen, schwerer Unfall oder Verletzung, neue Schule, neue Freunde, Verlust alter Freunde.' },
+
+  // Block 2: Gewalt-Arten (2 Aufgaben)
+  { block: 'Gewalt-Arten', type: 'mc',
+    text: 'Jemand nennt einen anderen immer wieder dumme Namen und lacht ihn aus. Welche Art von Gewalt ist das?',
+    hint: 'Es gibt Gewalt gegen den Körper und Gewalt gegen die Gefühle.',
+    inputHint: 'Antwort tippen',
+    options: ['Körperliche Gewalt', 'Seelische Gewalt'],
+    correct: 1,
+    display: 'Seelische Gewalt — Beleidigungen, Auslachen und Ausgrenzen verletzen die Gefühle, nicht den Körper.' },
+
+  { block: 'Gewalt-Arten', type: 'mc',
+    text: 'Jemand schubst einen Mitschüler absichtlich auf dem Pausenhof. Welche Art von Gewalt ist das?',
+    hint: 'Schubsen betrifft den Körper direkt.',
+    inputHint: 'Antwort tippen',
+    options: ['Körperliche Gewalt', 'Seelische Gewalt'],
+    correct: 0,
+    display: 'Körperliche Gewalt — Schubsen, Schlagen oder Treten verletzen den Körper direkt.' },
+
+  // Block 3: Mobbing plus Cybermobbing (2 Aufgaben)
+  { block: 'Mobbing plus Cybermobbing', type: 'mc',
+    text: 'Ein einmaliger Streit auf dem Pausenhof ist bereits Mobbing. Stimmt das?',
+    hint: 'Mobbing hat drei Merkmale: absichtlich, wiederholt und über längere Zeit.',
+    inputHint: 'Richtig oder Falsch',
+    options: ['Richtig', 'Falsch'],
+    correct: 1,
+    display: 'Falsch — Mobbing ist absichtlich UND wiederholt UND über einen längeren Zeitraum. Ein einmaliger Streit ist ein Konflikt, aber noch kein Mobbing.' },
+
+  { block: 'Mobbing plus Cybermobbing', type: 'mc',
+    text: 'Jemand postet immer wieder Beleidigungen über einen Mitschüler in einer WhatsApp-Gruppe. Was ist das?',
+    hint: 'Online, über Handy oder Internet, wiederholt — eine besondere Form von Mobbing.',
+    inputHint: 'Antwort tippen',
+    options: ['Normales Mobbing', 'Cybermobbing'],
+    correct: 1,
+    display: 'Cybermobbing — Mobbing über digitale Wege wie WhatsApp, Chats oder Social Media.' },
+
+  // Block 4: Prävention plus Intervention (2 Aufgaben)
+  { block: 'Prävention plus Intervention', type: 'mc',
+    text: 'Die Klasse spricht gemeinsam Regeln ab, wie alle fair miteinander umgehen. Ist das Prävention oder Intervention?',
+    hint: 'Prävention = davor, damit es gar nicht passiert. Intervention = während es passiert, dann eingreifen.',
+    inputHint: 'Antwort tippen',
+    options: ['Prävention (davor)', 'Intervention (währenddessen)'],
+    correct: 0,
+    display: 'Prävention — Regeln davor absprechen soll Gewalt verhindern, bevor sie entsteht.' },
+
+  { block: 'Prävention plus Intervention', type: 'mc',
+    text: 'Ein Lehrer greift ein, als zwei Schüler sich auf dem Pausenhof streiten. Ist das Prävention oder Intervention?',
+    hint: 'Der Streit läuft gerade, der Lehrer greift genau dann ein.',
+    inputHint: 'Antwort tippen',
+    options: ['Prävention (davor)', 'Intervention (währenddessen)'],
+    correct: 1,
+    display: 'Intervention — Eingreifen während ein Konflikt gerade stattfindet.' },
+
+  // Block 5: Behinderung (2 Aufgaben)
+  { block: 'Behinderung', type: 'mc',
+    text: 'Eine Behinderung ist immer sichtbar. Stimmt das?',
+    hint: 'Behinderungen können den Körper, das Denken oder die Gefühle betreffen. Manche sind sichtbar, manche nicht.',
+    inputHint: 'Richtig oder Falsch',
+    options: ['Richtig', 'Falsch'],
+    correct: 1,
+    display: 'Falsch — eine Behinderung kann den Körper (sichtbar) oder das Denken oder die Gefühle (oft nicht sichtbar) betreffen.' },
+
+  { block: 'Behinderung', type: 'textkw',
+    text: 'Nenne ein Beispiel, wie das Leben für einen Menschen mit Behinderung erschwert sein kann.',
+    hint: 'Denk an Alltags-Situationen: Treppen, Türen, Hören, Lesen, Sehen, Verstehen.',
+    inputHint: 'Beispiel kurz beschreiben',
+    mode: 'any',
+    keywords: ['treppe', 'rampe', 'rollstuhl', 'rolli', 'lesen', 'hoer', 'horen', 'sehen', 'blind', 'taub', 'verstehen', 'sprechen', 'reden', 'bewegen', 'barriere', 'denken', 'gefuehl', 'tuer', 'schreiben', 'laufen'],
+    display: 'Mögliche Beispiele: Treppen ohne Rampe, Türen zu schmal für Rollstuhl, Texte schwer zu lesen, schlecht hören können, nicht gut verstehen was andere meinen, nicht gut sprechen können.' },
+
+  // Block 6: Inklusion (2 Aufgaben)
+  { block: 'Inklusion', type: 'textkw',
+    text: 'Vervollständige den Satz: „Inklusion bedeutet, dass alle Menschen ___ und ___ dürfen, egal wie sie aussehen oder was sie können."',
+    hint: 'Zwei wichtige Wörter aus dem Merkblatt. Das erste beschreibt „zur Gruppe gehören", das zweite beschreibt „aktiv dabei sein".',
+    inputHint: 'Beide Wörter in einer Antwort',
+    mode: 'all',
+    keywords: ['gehoer', 'mitmach'],
+    display: 'dazugehören und mitmachen — Inklusion heißt, alle gehören dazu und dürfen mitmachen.' },
+
+  { block: 'Inklusion', type: 'mc',
+    text: 'Welches Beispiel beschreibt gelebte Inklusion am besten?',
+    hint: 'Gelebte Inklusion heißt: alle dürfen mitmachen, auch wenn sie anders sind oder noch etwas lernen müssen.',
+    inputHint: 'Antwort tippen',
+    options: [
+      'Ein Kind im Rollstuhl darf nicht mit auf die Klassenfahrt, weil der Bus keine Rampe hat',
+      'Alle Kinder spielen gemeinsam, auch das Kind, das noch nicht so gut Deutsch kann, bekommt eine Rolle',
+      'Nur die besten Schüler dürfen bei der Theater-AG mitmachen'
+    ],
+    correct: 1,
+    display: 'Option B — gelebte Inklusion heißt, alle werden einbezogen, auch wenn jemand noch Hilfe braucht oder anders ist. Option A ist Ausschluss, Option C ist Auswahl nach Leistung.' }
+];
+
+let currentIndex = 0;
+let questionStartTime = 0;
+let timerInterval = null;
+let pauseStartTime = 0;
+let answers = [];
+let diagnoseStarted = false;
+
+function normalizeText(str) {
+  return str.toString().toLowerCase().trim()
+    .replace(/\s+/g, ' ')
+    .replace(/ß/g, 'ss')
+    .replace(/ä/g, 'ae')
+    .replace(/ö/g, 'oe')
+    .replace(/ü/g, 'ue');
+}
+
+function startDiagnose() {
+  diagnoseStarted = true;
+  document.getElementById('app').innerHTML = `
+    <h1>Baseline-Diagnose Zusammenleben</h1>
+    <div class="header">
+      <div class="progress" id="progress">Frage 1 von ${questions.length}</div>
+      <div class="timer" id="timer">0 Sek</div>
+    </div>
+    <div class="block-label" id="block-label"></div>
+    <div class="question-box">
+      <div class="input-hint" id="input-hint"></div>
+      <div class="question-text" id="question-text"></div>
+      <div class="question-hint" id="question-hint"></div>
+      <div id="answer-area"></div>
+    </div>
+  `;
+  renderQuestion();
+}
+
+function startTimer() {
+  questionStartTime = Date.now();
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    const sec = Math.floor((Date.now() - questionStartTime) / 1000);
+    document.getElementById('timer').textContent = sec + ' Sek';
+    if (sec === 60) showPauseDialog();
+  }, 500);
+}
+
+function stopTimer() {
+  if (timerInterval) clearInterval(timerInterval);
+  return Math.floor((Date.now() - questionStartTime) / 1000);
+}
+
+function showPauseDialog() {
+  pauseStartTime = Date.now();
+  document.getElementById('pause-dialog').style.display = 'flex';
+}
+
+function pauseResume(wasAway) {
+  if (wasAway) {
+    questionStartTime += (Date.now() - pauseStartTime);
+  }
+  document.getElementById('pause-dialog').style.display = 'none';
+  if (!answers[currentIndex]) answers[currentIndex] = {};
+  answers[currentIndex].wasAway = wasAway;
+}
+
+function renderQuestion() {
+  const q = questions[currentIndex];
+  document.getElementById('progress').textContent = 'Frage ' + (currentIndex + 1) + ' von ' + questions.length;
+  document.getElementById('block-label').textContent = 'Block: ' + q.block;
+  document.getElementById('input-hint').textContent = q.inputHint;
+  document.getElementById('question-text').textContent = q.text;
+  document.getElementById('question-hint').innerHTML = q.hint;
+  const answerArea = document.getElementById('answer-area');
+
+  if (q.type === 'textkw') {
+    answerArea.innerHTML = '<input type="text" class="input-field" id="answer-input" autocomplete="off" autocapitalize="off" autocorrect="off" placeholder="Deine Antwort"><button class="submit-btn" onclick="submitTextKw()">Antwort absenden</button><button class="skip-btn" onclick="skipQuestion()">Weiß ich nicht — überspringen</button>';
+    setTimeout(() => document.getElementById('answer-input').focus(), 100);
+  } else if (q.type === 'mc') {
+    let html = '<div class="mc-options">';
+    q.options.forEach((opt, i) => {
+      html += '<button class="mc-button" onclick="submitMC(' + i + ')">' + opt + '</button>';
+    });
+    html += '</div><button class="skip-btn" onclick="skipQuestion()">Weiß ich nicht — überspringen</button>';
+    answerArea.innerHTML = html;
+  }
+  startTimer();
+}
+
+function submitTextKw() {
+  const input = document.getElementById('answer-input').value;
+  const q = questions[currentIndex];
+  const normalized = normalizeText(input);
+  let isCorrect;
+  if (q.mode === 'all') {
+    isCorrect = q.keywords.every(kw => normalized.includes(normalizeText(kw)));
+  } else {
+    isCorrect = q.keywords.some(kw => normalized.includes(normalizeText(kw)));
+  }
+  recordAnswer(input, isCorrect, false);
+}
+
+function submitMC(index) {
+  const q = questions[currentIndex];
+  const isCorrect = index === q.correct;
+  recordAnswer(q.options[index], isCorrect, false);
+}
+
+function skipQuestion() {
+  recordAnswer('(Weiß ich nicht)', false, true);
+}
+
+function recordAnswer(userAnswer, isCorrect, skipped) {
+  const timeSec = stopTimer();
+  const q = questions[currentIndex];
+  answers[currentIndex] = {
+    block: q.block,
+    question: q.text,
+    hint: q.hint,
+    userAnswer: userAnswer,
+    correctAnswer: q.display,
+    isCorrect: isCorrect,
+    skipped: skipped,
+    timeSec: timeSec,
+    wasAway: answers[currentIndex] ? answers[currentIndex].wasAway : false
+  };
+  nextQuestion();
+}
+
+function nextQuestion() {
+  currentIndex++;
+  if (currentIndex >= questions.length) {
+    showSummary();
+  } else {
+    renderQuestion();
+  }
+}
+
+function classifyPattern(block) {
+  const blockAnswers = answers.filter(a => a && a.block === block);
+  const nonSkipped = blockAnswers.filter(a => !a.skipped);
+  if (nonSkipped.length === 0) {
+    const skippedCount = blockAnswers.filter(a => a.skipped).length;
+    return { label: 'Nicht bearbeitet (alle übersprungen)', cls: 'pattern-luecke', correct: 0, total: blockAnswers.length, avgTime: 0, skipped: skippedCount };
+  }
+  const correctCount = nonSkipped.filter(a => a.isCorrect).length;
+  const correctRatio = correctCount / nonSkipped.length;
+  const avgTime = nonSkipped.reduce((sum, a) => sum + a.timeSec, 0) / nonSkipped.length;
+  const skippedCount = blockAnswers.filter(a => a.skipped).length;
+  const isSlowThreshold = 45;
+  let label, cls;
+  if (correctRatio >= 0.75 && avgTime <= isSlowThreshold) {
+    label = 'Beherrschung sicher (richtig plus schnell)'; cls = 'pattern-beherrschung';
+  } else if (correctRatio >= 0.75 && avgTime > isSlowThreshold) {
+    label = 'Festigungs-Bedarf (richtig aber langsam)'; cls = 'pattern-festigung';
+  } else if (correctRatio < 0.75 && avgTime <= isSlowThreshold) {
+    label = 'Flüchtigkeits-Fehler (falsch aber schnell)'; cls = 'pattern-fluechtigkeit';
+  } else {
+    label = 'Konzept-Lücke (falsch und langsam)'; cls = 'pattern-luecke';
+  }
+  return { label, cls, correct: correctCount, total: blockAnswers.length, avgTime: Math.round(avgTime), skipped: skippedCount };
+}
+
+function showSummary() {
+  const nonSkipped = answers.filter(a => a && !a.skipped);
+  const correctCount = nonSkipped.filter(a => a.isCorrect).length;
+  const skippedCount = answers.filter(a => a && a.skipped).length;
+  const totalTime = answers.filter(a => a).reduce((sum, a) => sum + a.timeSec, 0);
+  const minutes = Math.floor(totalTime / 60);
+  const seconds = totalTime % 60;
+
+  const blocks = ['Lebens-Umbrüche', 'Gewalt-Arten', 'Mobbing plus Cybermobbing', 'Prävention plus Intervention', 'Behinderung', 'Inklusion'];
+
+  let html = '<div class="summary">';
+  html += '<h1>Fertig, Ferdi!</h1>';
+  html += '<div class="score">' + correctCount + ' von ' + nonSkipped.length + ' richtig' + (skippedCount > 0 ? ' · ' + skippedCount + ' übersprungen' : '') + '</div>';
+  html += '<div class="total-time">Gesamt-Zeit: ' + totalTime + ' Sekunden (' + minutes + ' Min ' + seconds + ' Sek)</div>';
+
+  html += '<h2>Pattern-Analyse pro Block</h2>';
+  blocks.forEach(block => {
+    const p = classifyPattern(block);
+    html += '<div class="block-section">';
+    html += '<h3>Block: ' + block + '</h3>';
+    html += '<p>' + p.correct + ' von ' + p.total + ' richtig · Durchschnitts-Zeit ' + p.avgTime + ' Sek';
+    if (p.skipped > 0) html += ' · ' + p.skipped + ' übersprungen';
+    html += '</p>';
+    html += '<div class="block-pattern ' + p.cls + '">' + p.label + '</div>';
+    html += '</div>';
+  });
+
+  html += '<h2>Deine Antworten im Detail</h2>';
+  html += '<table><thead><tr><th>Nr</th><th>Block</th><th>Deine Antwort</th><th>Richtig</th><th>Zeit</th></tr></thead><tbody>';
+  answers.forEach((a, i) => {
+    if (!a) return;
+    const rowClass = a.skipped ? 'skipped' : (a.isCorrect ? 'right' : 'wrong');
+    const timeDisplay = a.timeSec + 's' + (a.wasAway ? ' (Pause)' : '');
+    html += '<tr><td class="' + rowClass + '">' + (i + 1) + '</td><td>' + a.block + '</td><td>' + a.userAnswer + '</td><td>' + a.correctAnswer + '</td><td>' + timeDisplay + '</td></tr>';
+  });
+  html += '</tbody></table>';
+
+  html += '<div class="screenshot-hint">';
+  html += '<strong>Jetzt:</strong><br>';
+  html += 'Tippe auf den grünen Knopf unten, um das Ergebnis zu kopieren. Dann WhatsApp öffnen und an Papa einfügen.';
+  html += '</div>';
+  html += '<button class="share-btn" onclick="copyText()">Ergebnis kopieren plus an Papa senden</button>';
+  html += '</div>';
+  document.getElementById('app').innerHTML = html;
+}
+
+function buildShareText() {
+  const nonSkipped = answers.filter(a => a && !a.skipped);
+  const correctCount = nonSkipped.filter(a => a.isCorrect).length;
+  const skippedCount = answers.filter(a => a && a.skipped).length;
+  const totalTime = answers.filter(a => a).reduce((sum, a) => sum + a.timeSec, 0);
+  const minutes = Math.floor(totalTime / 60);
+  const seconds = totalTime % 60;
+
+  let text = 'Baseline-Diagnose Zusammenleben — Ferdinand\n\n';
+  text += 'Score: ' + correctCount + ' von ' + nonSkipped.length + ' richtig';
+  if (skippedCount > 0) text += ' · ' + skippedCount + ' übersprungen';
+  text += '\nGesamt-Zeit: ' + totalTime + ' Sek (' + minutes + ' Min ' + seconds + ' Sek)\n\n';
+
+  text += 'Pattern-Analyse pro Block:\n';
+  const blocks = ['Lebens-Umbrüche', 'Gewalt-Arten', 'Mobbing plus Cybermobbing', 'Prävention plus Intervention', 'Behinderung', 'Inklusion'];
+  blocks.forEach(block => {
+    const p = classifyPattern(block);
+    text += '- ' + block + ': ' + p.correct + '/' + p.total + ' richtig, Zeit-ø ' + p.avgTime + 's';
+    if (p.skipped > 0) text += ' (' + p.skipped + ' übersprungen)';
+    text += ' → ' + p.label + '\n';
+  });
+
+  text += '\nDetails pro Frage:\n';
+  answers.forEach((a, i) => {
+    if (!a) return;
+    const marker = a.skipped ? '-' : (a.isCorrect ? '+' : 'x');
+    const pause = a.wasAway ? ' (Pause)' : '';
+    text += (i + 1) + '. ' + a.block + ': "' + a.userAnswer + '" ' + marker + ' richtig wäre: ' + a.correctAnswer + ' · ' + a.timeSec + 's' + pause + '\n';
+  });
+  return text;
+}
+
+function copyText() {
+  const text = buildShareText();
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      alert('Text kopiert. Jetzt WhatsApp öffnen plus einfügen plus an Papa senden.');
+    }).catch(err => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';
+  textarea.style.top = '0';
+  textarea.style.left = '0';
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  try {
+    document.execCommand('copy');
+    alert('Text kopiert. Jetzt WhatsApp öffnen plus einfügen plus an Papa senden.');
+  } catch (err) {
+    alert('Kopieren hat nicht geklappt. Bitte Screenshot vom Ergebnis machen plus via WhatsApp an Papa senden.');
+  }
+  document.body.removeChild(textarea);
+}
+</script>
+
+</body>
+</html>
