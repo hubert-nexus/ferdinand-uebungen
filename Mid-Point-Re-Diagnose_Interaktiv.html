@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Mid-Point-Re-Diagnose — Natürliche Zahlen</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif; margin: 0; padding: 16px; background: #f5f5f7; color: #1d1d1f; -webkit-text-size-adjust: 100%; }
+  .container { max-width: 500px; margin: 0 auto; }
+  .header { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .header h1 { margin: 0 0 4px 0; font-size: 20px; }
+  .header p { margin: 0; color: #86868b; font-size: 14px; }
+  .progress { background: white; border-radius: 12px; padding: 12px 16px; margin-bottom: 12px; display: flex; justify-content: space-between; font-size: 14px; }
+  .progress .timer { color: #007aff; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .block-title { font-size: 13px; color: #86868b; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .question { font-size: 17px; line-height: 1.4; margin-bottom: 16px; }
+  .icon-hint { display: inline-block; margin-right: 6px; font-size: 18px; }
+  .input-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  input[type="text"], input[type="number"] { flex: 1; padding: 14px 12px; font-size: 18px; border: 2px solid #d2d2d7; border-radius: 10px; -webkit-appearance: none; }
+  input:focus { outline: none; border-color: #007aff; }
+  .multi-field { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 12px; }
+  .multi-field label { font-size: 11px; text-align: center; color: #86868b; display: block; margin-bottom: 2px; }
+  .multi-field input { padding: 10px 4px; font-size: 16px; text-align: center; }
+  .buttons { display: flex; gap: 8px; margin-top: 8px; }
+  button { flex: 1; padding: 14px; font-size: 16px; font-weight: 600; border: none; border-radius: 10px; cursor: pointer; }
+  .btn-primary { background: #007aff; color: white; }
+  .btn-primary:active { background: #0051d5; }
+  .btn-skip { background: #e8e8ed; color: #1d1d1f; }
+  .end-screen { background: white; border-radius: 12px; padding: 24px; }
+  .end-screen h2 { margin-top: 0; }
+  .score-big { font-size: 48px; font-weight: 700; color: #007aff; text-align: center; margin: 12px 0; }
+  .total-time { text-align: center; color: #86868b; margin-bottom: 20px; }
+  .block-result { padding: 12px; border-radius: 10px; margin-bottom: 8px; border-left: 4px solid; }
+  .block-result h3 { margin: 0 0 4px 0; font-size: 15px; }
+  .block-result p { margin: 0; font-size: 13px; color: #515154; }
+  .q-beherrscht { background: #e8f8ea; border-left-color: #34c759; }
+  .q-festigung { background: #fff4e5; border-left-color: #ff9500; }
+  .q-fluechtig { background: #ffe8e8; border-left-color: #ff3b30; }
+  .q-konzept { background: #ffe0e8; border-left-color: #af52de; }
+  .pause-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 100; }
+  .pause-dialog { background: white; border-radius: 16px; padding: 24px; max-width: 320px; }
+  .share-box { background: #f5f5f7; border-radius: 10px; padding: 12px; margin: 12px 0; font-size: 13px; line-height: 1.5; white-space: pre-wrap; font-family: Menlo, monospace; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Mid-Point-Re-Diagnose</h1>
+    <p>Natürliche Zahlen · 11 Aufgaben · ca. 12 Min</p>
+  </div>
+  <div class="progress">
+    <span id="progressText">Frage 1 von 11</span>
+    <span class="timer" id="timer">0:00</span>
+  </div>
+  <div id="questionArea"></div>
+  <div id="endScreen" style="display:none;"></div>
+</div>
+
+<div class="pause-overlay" id="pauseOverlay">
+  <div class="pause-dialog">
+    <h3 style="margin-top:0;">Alles ok?</h3>
+    <p>Du brauchst länger als 60 Sekunden. Warst du kurz weg?</p>
+    <div class="buttons">
+      <button class="btn-skip" onclick="pauseResume(true)">Ja, war weg</button>
+      <button class="btn-primary" onclick="pauseResume(false)">Nein, denke nach</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const questions = [
+  { block: 'Stellenwerttafel', icon: '🔲', text: 'Trage ein: siebzigtausend', fields: ['HT','ZT','T','H','Z','E'].slice(1), answer: ['7','0','0','0','0'], type: 'multi' },
+  { block: 'Stellenwerttafel', icon: '🔢', text: 'Welche Zahl ist 2 Mio + 300 T + 50?', correct: ['2300050','2 300 050'], type: 'num' },
+  { block: 'Zahlen lesen+schreiben', icon: '🔢', text: 'Schreibe als Zahl: dreihunderttausend-fünf', correct: ['300005','300 005'], type: 'num' },
+  { block: 'Zahlen lesen+schreiben', icon: '📝', text: 'Schreibe in Worten: 1 085 230', correct: ['eine million fünfundachtzigtausend zweihundertdreißig','einemillion fünfundachtzigtausend zweihundertdreißig','eine million fünfundachtzigtausendzweihundertdreißig'], type: 'word' },
+  { block: 'Zahlenstrahl', icon: '🔢', text: 'Zahlenstrahl 48000 → 49000. Welche Zahl liegt in der Mitte?', correct: ['48500','48 500'], type: 'num' },
+  { block: 'Vergleichen', icon: '⬜', text: 'Setze ein: 48 925 ___ 48 952', correct: ['<'], type: 'sym' },
+  { block: 'Vergleichen', icon: '⬜', text: 'Setze ein: 800 040 ___ 80 400', correct: ['>'], type: 'sym' },
+  { block: 'Runden', icon: '🔢', text: 'Runde 7 393 385 auf Hunderttausender', correct: ['7400000','7 400 000'], type: 'num' },
+  { block: 'Runden', icon: '🔢', text: 'Runde 24 auf Zehner', correct: ['20'], type: 'num' },
+  { block: 'Runden', icon: '🔢', text: 'Runde 4 329 840 auf Hunderttausender', correct: ['4300000','4 300 000'], type: 'num' },
+  { block: 'Schätzen', icon: '🔢', text: 'Bild: 8 gleiche Felder, in einem Feld ca. 15 Punkte. Schätze gesamt.', correct: ['120'], type: 'num', tolerance: 10 }
+];
+
+let current = 0;
+let answers = [];
+let times = [];
+let qStart = Date.now();
+let totalStart = Date.now();
+let pauseFlag = false;
+let pauseStart = 0;
+let pauseAccum = 0;
+let timerInterval, pauseCheck;
+
+function normalize(s) {
+  return s.toString().toLowerCase().replace(/[.,\s]/g, '').trim();
+}
+
+function render() {
+  const q = questions[current];
+  document.getElementById('progressText').textContent = `Frage ${current+1} von ${questions.length}`;
+  const area = document.getElementById('questionArea');
+  let inputHtml = '';
+  if (q.type === 'multi') {
+    inputHtml = '<div class="multi-field">';
+    q.fields.forEach((f,i) => {
+      inputHtml += `<div><label>${f}</label><input type="text" inputmode="numeric" id="ans${i}" maxlength="1"></div>`;
+    });
+    inputHtml += '</div>';
+  } else if (q.type === 'word') {
+    inputHtml = '<input type="text" id="ans0" placeholder="in Worten schreiben" autocomplete="off">';
+  } else if (q.type === 'sym') {
+    inputHtml = `<div class="buttons" style="margin-bottom:12px;">
+      <button class="btn-skip" onclick="submitSym('<')" style="font-size:20px;">&lt;</button>
+      <button class="btn-skip" onclick="submitSym('=')" style="font-size:20px;">=</button>
+      <button class="btn-skip" onclick="submitSym('>')" style="font-size:20px;">&gt;</button>
+    </div>`;
+  } else {
+    inputHtml = '<input type="text" id="ans0" inputmode="numeric" placeholder="Zahl eingeben" autocomplete="off">';
+  }
+
+  area.innerHTML = `
+    <div class="card">
+      <div class="block-title">${q.block}</div>
+      <div class="question"><span class="icon-hint">${q.icon}</span>${q.text}</div>
+      ${inputHtml}
+      ${q.type !== 'sym' ? '<div class="buttons"><button class="btn-skip" onclick="skip()">Weiß ich nicht</button><button class="btn-primary" onclick="submit()">Weiter</button></div>' : '<div class="buttons"><button class="btn-skip" onclick="skip()">Weiß ich nicht</button></div>'}
+    </div>
+  `;
+
+  qStart = Date.now();
+  pauseAccum = 0;
+  if (q.type !== 'sym' && document.getElementById('ans0')) {
+    document.getElementById('ans0').focus();
+  }
+}
+
+function submit() {
+  const q = questions[current];
+  let userAns = '';
+  if (q.type === 'multi') {
+    userAns = q.fields.map((_,i) => (document.getElementById('ans'+i).value || '').trim()).join('|');
+  } else {
+    userAns = (document.getElementById('ans0').value || '').trim();
+  }
+  if (!userAns || userAns === q.fields?.map(() => '').join('|')) {
+    alert('Bitte Antwort eingeben oder "Weiß ich nicht" wählen.');
+    return;
+  }
+  recordAndNext(userAns);
+}
+
+function submitSym(sym) {
+  recordAndNext(sym);
+}
+
+function skip() {
+  recordAndNext('__SKIP__');
+}
+
+function recordAndNext(userAns) {
+  const q = questions[current];
+  let correct = false;
+  if (userAns === '__SKIP__') {
+    correct = false;
+  } else if (q.type === 'multi') {
+    const parts = userAns.split('|');
+    correct = parts.length === q.answer.length && parts.every((p,i) => normalize(p) === normalize(q.answer[i]));
+  } else if (q.tolerance) {
+    const num = parseInt(normalize(userAns));
+    const correctNum = parseInt(normalize(q.correct[0]));
+    correct = !isNaN(num) && Math.abs(num - correctNum) <= q.tolerance;
+  } else {
+    correct = q.correct.some(c => normalize(c) === normalize(userAns));
+  }
+  const timeSec = Math.round((Date.now() - qStart - pauseAccum) / 1000);
+  answers.push({ userAns, correct, skip: userAns === '__SKIP__' });
+  times.push(timeSec);
+  current++;
+  if (current < questions.length) {
+    render();
+  } else {
+    showEndScreen();
+  }
+}
+
+function updateTimer() {
+  if (pauseFlag) return;
+  const sec = Math.round((Date.now() - totalStart) / 1000);
+  const m = Math.floor(sec/60);
+  const s = sec % 60;
+  document.getElementById('timer').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+}
+
+function checkPause() {
+  if (!pauseFlag && (Date.now() - qStart - pauseAccum) > 60000) {
+    pauseFlag = true;
+    pauseStart = Date.now();
+    document.getElementById('pauseOverlay').style.display = 'flex';
+  }
+}
+
+function pauseResume(wasAway) {
+  pauseFlag = false;
+  if (wasAway) pauseAccum += Date.now() - pauseStart;
+  document.getElementById('pauseOverlay').style.display = 'none';
+}
+
+function classifyBlock(block) {
+  const blockAnswers = [];
+  questions.forEach((q,i) => { if (q.block === block) blockAnswers.push({ correct: answers[i].correct, time: times[i] }); });
+  const correctCount = blockAnswers.filter(a => a.correct).length;
+  const correctPct = correctCount / blockAnswers.length;
+  const avgTime = blockAnswers.reduce((s,a) => s+a.time, 0) / blockAnswers.length;
+  const isSlow = avgTime > 30;
+  const isCorrect = correctPct >= 0.75;
+  if (isCorrect && !isSlow) return { label: 'Beherrschung sicher', cls: 'q-beherrscht', hint: 'Kein weiterer Fokus nötig.' };
+  if (isCorrect && isSlow) return { label: 'Festigungs-Bedarf', cls: 'q-festigung', hint: 'Konzept sitzt. Jetzt Automatisierungs-Übungen für Geschwindigkeit.' };
+  if (!isCorrect && !isSlow) return { label: 'Flüchtigkeits-Fehler', cls: 'q-fluechtig', hint: 'Konzept verstanden, Selbst-Check-Routine braucht Fokus. Nach Antwort nochmal lesen.' };
+  return { label: 'Konzept-Lücke', cls: 'q-konzept', hint: 'Merkblatt-Review nötig plus gezielte Fokus-Übungen von Grund auf.' };
+}
+
+function showEndScreen() {
+  clearInterval(timerInterval);
+  clearInterval(pauseCheck);
+  const totalSec = Math.round((Date.now() - totalStart) / 1000);
+  const correctCount = answers.filter(a => a.correct).length;
+  const blocks = [...new Set(questions.map(q => q.block))];
+  const area = document.getElementById('questionArea');
+  area.style.display = 'none';
+  document.getElementById('endScreen').style.display = 'block';
+
+  let shareText = `Mid-Point-Diagnose Mathe
+Score: ${correctCount}/${questions.length}
+Zeit: ${Math.floor(totalSec/60)} Min ${totalSec%60} Sek
+
+`;
+
+  let html = `<div class="end-screen">
+    <h2>Fertig!</h2>
+    <div class="score-big">${correctCount}/${questions.length}</div>
+    <div class="total-time">Zeit gesamt: ${Math.floor(totalSec/60)}:${(totalSec%60).toString().padStart(2,'0')} Min</div>
+    <h3>Pattern pro Block</h3>`;
+  blocks.forEach(b => {
+    const c = classifyBlock(b);
+    const bq = questions.map((q,i) => q.block === b ? {q,a:answers[i],t:times[i]} : null).filter(x => x);
+    const correct = bq.filter(x => x.a.correct).length;
+    const avgT = Math.round(bq.reduce((s,x) => s+x.t, 0) / bq.length);
+    html += `<div class="block-result ${c.cls}">
+      <h3>${b}</h3>
+      <p>${correct}/${bq.length} richtig · Ø ${avgT}s · ${c.label}</p>
+      <p style="margin-top:4px; font-style: italic;">${c.hint}</p>
+    </div>`;
+    shareText += `${b}: ${correct}/${bq.length}, Ø ${avgT}s → ${c.label}\n`;
+  });
+
+  html += `<h3 style="margin-top:16px;">Screenshot für Papa</h3>
+    <div class="share-box" id="shareText">${shareText}</div>
+    <button class="btn-primary" onclick="copyShare()">Text kopieren</button>
+    <p style="margin-top:12px; font-size: 13px; color: #86868b;">Mach einen Screenshot von diesem Bildschirm und schick ihn Papa via WhatsApp.</p>
+  </div>`;
+
+  document.getElementById('endScreen').innerHTML = html;
+  window.scrollTo(0,0);
+}
+
+function copyShare() {
+  const text = document.getElementById('shareText').textContent;
+  navigator.clipboard.writeText(text).then(() => alert('Text kopiert.'));
+}
+
+timerInterval = setInterval(updateTimer, 500);
+pauseCheck = setInterval(checkPause, 2000);
+render();
+</script>
+</body>
+</html>
